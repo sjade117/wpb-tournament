@@ -410,6 +410,93 @@ function renderBracket(divId) {
   return html;
 }
 
+function computeDivStandings(divId, atm) {
+  var divTeamArr = STATE.teams[divId] || [];
+  var stats = {};
+  for (var i=0; i<divTeamArr.length; i++) {
+    var t = divTeamArr[i];
+    stats[t.id] = {id:t.id, name:t.name, w:0, l:0, rs:0, ra:0, gp:0};
+  }
+  for (var gi=0; gi<STATE.schedule.length; gi++) {
+    var g = STATE.schedule[gi];
+    if (!g.complete || g.isBracket) continue;
+    if (!atm[g.homeId] || atm[g.homeId].divId !== divId) continue;
+    var hs = parseInt(g.homeScore) || 0;
+    var as = parseInt(g.awayScore) || 0;
+    if (stats[g.homeId]) {
+      stats[g.homeId].gp++;
+      stats[g.homeId].rs += hs;
+      stats[g.homeId].ra += as;
+      if (hs > as) stats[g.homeId].w++; else stats[g.homeId].l++;
+    }
+    if (stats[g.awayId]) {
+      stats[g.awayId].gp++;
+      stats[g.awayId].rs += as;
+      stats[g.awayId].ra += hs;
+      if (as > hs) stats[g.awayId].w++; else stats[g.awayId].l++;
+    }
+  }
+  var arr = [];
+  var ids = Object.keys(stats);
+  for (var si=0; si<ids.length; si++) arr.push(stats[ids[si]]);
+  arr.sort(function(a,b) {
+    var wpA = a.gp ? a.w/a.gp : 0;
+    var wpB = b.gp ? b.w/b.gp : 0;
+    if (wpB !== wpA) return wpB - wpA;
+    if (a.ra !== b.ra) return a.ra - b.ra;
+    return b.rs - a.rs;
+  });
+  return arr;
+}
+
+function renderStandings(divId, atm) {
+  var standings = computeDivStandings(divId, atm);
+  var seeding = STATE.seedings[divId];
+  var isFinalized = seeding && seeding.finalized;
+
+  if (!standings.length) return '<div class="empty"><div class="icon">&#9918;</div><p>No results yet for ' + esc(divId) + '</p></div>';
+
+  var hasGames = false;
+  for (var i=0; i<standings.length; i++) { if (standings[i].gp > 0) { hasGames = true; break; } }
+  if (!hasGames) return '<div class="empty"><div class="icon">&#9918;</div><p>No completed games yet for ' + esc(divId) + '</p></div>';
+
+  var html = '';
+  if (isFinalized) {
+    html += '<div style="background:var(--success-bg);border:1px solid #9de0c4;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--success)">&#10003; Seeding finalized &mdash; bracket is set.</div>';
+  } else {
+    html += '<div style="background:var(--carolina-light);border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--navy)">Pool play standings &mdash; updates live as results are entered. Tiebreakers: Win% &rarr; Runs Allowed &rarr; Runs Scored.</div>';
+  }
+
+  html += '<div style="background:#fff;border-radius:12px;border:1px solid var(--gray-200);overflow:hidden">';
+  html += '<div style="display:grid;grid-template-columns:28px 1fr 36px 36px 36px 50px 50px;gap:8px;padding:8px 14px;background:var(--gray-100);border-bottom:1px solid var(--gray-200)">';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400)">#</span>';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400)">TEAM</span>';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400);text-align:center">W</span>';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400);text-align:center">L</span>';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400);text-align:center">GP</span>';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400);text-align:center">WIN%</span>';
+  html += '<span style="font-size:11px;font-weight:600;color:var(--gray-400);text-align:center">RA</span>';
+  html += '</div>';
+
+  for (var ri=0; ri<standings.length; ri++) {
+    var t = standings[ri];
+    var wp = t.gp ? Math.round(t.w/t.gp*100) : 0;
+    var isTop = ri === 0 && t.gp > 0;
+    var bg = isTop ? 'background:rgba(26,47,78,0.04);' : '';
+    html += '<div style="display:grid;grid-template-columns:28px 1fr 36px 36px 36px 50px 50px;gap:8px;padding:10px 14px;border-bottom:1px solid var(--gray-100);' + bg + '">';
+    html += '<span style="font-size:12px;font-weight:700;color:var(--carolina-dark)">' + (ri+1) + '</span>';
+    html += '<span style="font-size:13px;font-weight:' + (isTop?'700':'500') + ';color:var(--navy)">' + esc(t.name) + '</span>';
+    html += '<span style="font-size:13px;font-weight:600;color:var(--success);text-align:center">' + t.w + '</span>';
+    html += '<span style="font-size:13px;color:var(--danger);text-align:center">' + t.l + '</span>';
+    html += '<span style="font-size:13px;color:var(--gray-400);text-align:center">' + t.gp + '</span>';
+    html += '<span style="font-size:13px;font-weight:500;text-align:center">' + wp + '%</span>';
+    html += '<span style="font-size:13px;color:var(--gray-400);text-align:center">' + t.ra + '</span>';
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
 function render() {
   var atm = getAllTeamsMap();
   var divs = Object.keys(STATE.teams);
@@ -421,7 +508,7 @@ function render() {
   app.style.display = 'block';
 
   if (!divs.length) {
-    app.innerHTML = '<div class="hdr"><div class="hdr-inner"><div><div class="hdr-title">West Pines Baseball</div><div class="hdr-sub">Tournament schedule</div></div></div></div><div class="content"><div class="empty"><div class="icon">&#9917;</div><p>Tournament data loading — please refresh in a moment.</p></div></div>';
+    app.innerHTML = '<div class="hdr"><div class="hdr-inner"><div><div class="hdr-title">West Pines Baseball</div><div class="hdr-sub">Tournament schedule</div></div></div></div><div class="content"><div class="empty"><div class="icon">&#9918;</div><p>Tournament data loading — please refresh in a moment.</p></div></div>';
     return;
   }
 
@@ -436,8 +523,8 @@ function render() {
     pillsHTML += '<button class="pill' + (d===STATE.selDiv?' on':'') + '" onclick="setDiv(&quot;' + esc(d) + '&quot;)">' + esc(d) + '</button>';
   }
 
-  var tabArr = ['schedule','bracket','pitches'];
-  var tabLbl = {'schedule':'Schedule','bracket':'Bracket','pitches':'Pitch counts'};
+  var tabArr = ['schedule','standings','bracket','pitches'];
+  var tabLbl = {'schedule':'Schedule','standings':'Standings','bracket':'Bracket','pitches':'Pitch counts'};
   var tabsHTML = '';
   for (var ti=0; ti<tabArr.length; ti++) {
     var v = tabArr[ti];
@@ -470,6 +557,10 @@ function render() {
 
   if (STATE.view === 'bracket') mainHTML = renderBracket(div);
 
+  if (STATE.view === 'standings') {
+    mainHTML = renderStandings(div, atm);
+  }
+
   if (STATE.view === 'pitches') {
     for (var dti=0; dti<divTeams.length; dti++) {
       var team = divTeams[dti];
@@ -489,7 +580,7 @@ function render() {
       }
       if (rows) mainHTML += '<div class="card" style="margin-bottom:1rem"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--gray-100)"><span style="font-family:Barlow Condensed,sans-serif;font-size:17px;font-weight:600">'+esc(team.name)+'</span>'+(rule?'<span class="badge b-gray">Limit: '+rule.limit+'</span>':'')+'</div>'+rows+'</div>';
     }
-    if (!mainHTML) mainHTML = '<div class="empty"><div class="icon">&#9917;</div><p>No pitch counts recorded yet</p></div>';
+    if (!mainHTML) mainHTML = '<div class="empty"><div class="icon">&#9918;</div><p>No pitch counts recorded yet</p></div>';
   }
 
   app.innerHTML = '<div class="hdr"><div class="hdr-inner">'+logoHTML+'<div><div class="hdr-title">'+esc(t.name||'West Pines Baseball')+'</div><div class="hdr-sub">'+esc(subText)+'</div></div></div></div><div class="content"><div class="pills">'+pillsHTML+'</div><div class="tabs">'+tabsHTML+'</div>'+mainHTML+'</div>';
