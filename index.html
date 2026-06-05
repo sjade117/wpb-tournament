@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Barlow',sans-serif;background:#f4f7fb;color:#1a2f4e;min-height:100vh}
+body{font-family:'Barlow',sans-serif;background:#eef2f7;color:#0d1e33;min-height:100vh}
 :root{--navy:#1a2f4e;--carolina:#5b9bd5;--carolina-light:#a8cce8;--carolina-dark:#3a7ab5;--white:#fff;--gray-100:#eef2f7;--gray-200:#dde5ef;--gray-400:#8fa3bc;--success:#2d9e6b;--success-bg:#e8f7f1;--warning:#c97d10;--warning-bg:#fef3e2;--danger:#c0392b;--danger-bg:#fdecea}
 
 /* Header */
@@ -31,9 +31,9 @@ body{font-family:'Barlow',sans-serif;background:#f4f7fb;color:#1a2f4e;min-height
 .tab.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 
 /* Cards */
-.card{background:#fff;border-radius:12px;border:1px solid var(--gray-200);padding:12px 14px;margin-bottom:8px}
-.game-teams{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;font-size:14px}
-.game-meta{font-size:13px;color:var(--gray-400)}
+.card{background:#fff;border-radius:12px;border:1px solid var(--gray-200);border-left:4px solid var(--carolina);padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+.game-teams{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;font-size:15px;font-weight:500}
+.game-meta{font-size:13px;color:#4a6380;font-weight:500}
 .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .b-ok{background:var(--success-bg);color:var(--success)}
 .b-warn{background:var(--warning-bg);color:var(--warning)}
@@ -551,7 +551,7 @@ function render() {
       var loc = pk2 ? shortPark(pk2.name)+' · '+gg.field.replace('Field ','F') : '—';
       var hw2 = gg.complete&&parseInt(gg.homeScore)>parseInt(gg.awayScore);
       var aw2 = gg.complete&&parseInt(gg.awayScore)>parseInt(gg.homeScore);
-      mainHTML += '<div class="card"><div class="game-teams"><span'+(hw2?' class="fw"':'')+'>'+(ht?esc(ht.name):'TBD')+'</span><span style="color:var(--gray-400)">'+(gg.complete?gg.homeScore+' – '+gg.awayScore:'vs')+'</span><span'+(aw2?' class="fw"':'')+'>'+(at2?esc(at2.name):'TBD')+'</span>'+(gg.complete?'<span class="badge b-ok" style="margin-left:auto">Final</span>':'')+'</div><div class="game-meta">'+fmtDate(gg.date)+' '+fmtTime(gg.time)+' · '+esc(loc)+'</div></div>';
+      mainHTML += '<div class="card"><div class="game-teams"><span style="color:#0d1e33;font-weight:700">'+(ht?esc(ht.name):'TBD')+'</span><span style="color:var(--carolina-dark);font-size:12px;font-weight:500;margin:0 2px">vs</span><span style="color:#0d1e33;font-weight:700">'+(at2?esc(at2.name):'TBD')+'</span>'+(gg.complete?'<span class="badge b-ok" style="margin-left:auto">'+gg.homeScore+' – '+gg.awayScore+'</span>':'')+'</div><div class="game-meta" style="color:#4a6380;margin-top:3px">'+fmtDate(gg.date)+' '+fmtTime(gg.time)+' · '+esc(loc)+'</div></div>';
     }
   }
 
