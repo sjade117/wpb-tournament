@@ -100,7 +100,7 @@ body{font-family:'Barlow',sans-serif;background:#eef2f7;color:#0d1e33;min-height
 var FS_URL = 'https://firestore.googleapis.com/v1/projects/west-pines-tournament/databases/(default)/documents/tournament/data';
 
 var STATE = {
-  tournament: {}, teams: {}, rosters: {}, parks: [],
+  tournament: {}, teams: {}, rosters: {}, pitchers: {}, parks: [],
   pitchRules: {}, schedule: [], pitchLog: [],
   seedings: {}, bracketSlots: [],
   selDiv: '', view: 'schedule'
@@ -160,6 +160,7 @@ function fetchData() {
     STATE.tournament = safeParse(raw.wp_tournament, {});
     STATE.teams = safeParse(raw.wp_teams, {});
     STATE.rosters = safeParse(raw.wp_rosters, {});
+    STATE.pitchers = safeParse(raw.wp_pitchers, {});
     STATE.parks = safeParse(raw.wp_parks, []);
     STATE.pitchRules = safeParse(raw.wp_pitch_rules, {});
     STATE.schedule = safeParse(raw.wp_schedule, []);
@@ -565,7 +566,8 @@ function render() {
     for (var dti=0; dti<divTeams.length; dti++) {
       var team = divTeams[dti];
       var rule = STATE.pitchRules[div];
-      var roster = STATE.rosters[team.id] || [];
+      // Use on-the-fly pitchers if available, fall back to rosters
+      var roster = STATE.pitchers[team.id] || STATE.rosters[team.id] || [];
       var rows = '';
       for (var ri3=0; ri3<roster.length; ri3++) {
         var pl = roster[ri3];
