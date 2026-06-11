@@ -414,7 +414,13 @@ function renderBracket(divId, bracketResults) {
     texts+='<text x="'+(svgW/2)+'" y="'+(svgH+15)+'" text-anchor="middle" font-size="9" fill="'+CS+'" font-style="italic">Team names appear after seeding is finalized</text>';
   }
 
-  return '<div style="overflow-x:auto;padding:0.5rem 0"><svg width="'+svgW+'" height="'+(svgH+25)+'" viewBox="0 0 '+svgW+' '+(svgH+25)+'" style="display:block;max-width:100%;overflow:visible">'+lines+texts+'</svg></div>';
+  var bannerHtml = '';
+  if (!finalized) {
+    bannerHtml = '<div style="background:#fef3e2;border:1px solid #f5c97a;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#c97d10">'
+      + '&#9203; <strong>Seeding not yet finalized</strong> — showing seed placeholders. Team names will appear once standings are finalized.'
+      + '</div>';
+  }
+  return bannerHtml + '<div style="overflow-x:auto;padding:0.5rem 0"><svg width="'+svgW+'" height="'+(svgH+25)+'" viewBox="0 0 '+svgW+' '+(svgH+25)+'" style="display:block;max-width:100%;overflow:visible">'+lines+texts+'</svg></div>';
 }
 
 
