@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>West Pines Baseball — Tournament</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Barlow',sans-serif;background:#eef2f7;color:#0d1e33;min-height:100vh}
+:root{--navy:#1a2f4e;--carolina:#5b9bd5;--carolina-light:#a8cce8;--carolina-dark:#3a7ab5;--white:#fff;--gray-100:#eef2f7;--gray-200:#dde5ef;--gray-400:#8fa3bc;--success:#2d9e6b;--success-bg:#e8f7f1;--warning:#c97d10;--warning-bg:#fef3e2;--danger:#c0392b;--danger-bg:#fdecea}
+
+/* Header */
+.hdr{background:var(--navy);padding:1rem 1.5rem;position:sticky;top:0;z-index:10}
+.hdr-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.hdr-logo{width:40px;height:40px;border-radius:50%;object-fit:contain;background:#243d63}
+.hdr-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:.02em}
+.hdr-sub{font-size:12px;color:var(--carolina-light)}
+
+/* Content */
+.content{max-width:640px;margin:0 auto;padding:1.25rem 1rem}
+
+/* Pills */
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem}
+.pill{padding:6px 16px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:2px solid transparent;background:var(--gray-100);color:var(--gray-400);letter-spacing:.03em;transition:all .15s}
+.pill.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--gray-100);padding:4px;border-radius:8px;margin-bottom:1.5rem}
+.tab{flex:1;padding:8px 12px;border:none;background:transparent;border-radius:6px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:500;color:var(--gray-400);cursor:pointer;transition:all .15s}
+.tab.on{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+
+/* Cards */
+.card{background:#fff;border-radius:12px;border:1px solid var(--gray-200);border-left:4px solid var(--carolina);padding:12px 14px;margin-bottom:8px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+.game-teams{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;font-size:15px;font-weight:500}
+.game-meta{font-size:13px;color:#4a6380;font-weight:500}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.b-ok{background:var(--success-bg);color:var(--success)}
+.b-warn{background:var(--warning-bg);color:var(--warning)}
+.b-block{background:var(--danger-bg);color:var(--danger)}
+.b-gray{background:var(--gray-100);color:var(--gray-400)}
+.b-navy{background:var(--navy);color:#fff}
+.fw{font-weight:700}
+
+/* Bracket */
+.bracket-wrap{overflow-x:auto;padding-bottom:1rem}
+.bracket{display:flex;align-items:flex-start;min-width:max-content}
+.b-col{display:flex;flex-direction:column;width:175px;flex-shrink:0}
+.b-col-lbl{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:var(--carolina-dark);text-transform:uppercase;letter-spacing:.08em;text-align:center;padding:8px 0 10px;border-bottom:2px solid var(--carolina-light);margin-bottom:6px}
+.b-col-games{display:flex;flex-direction:column;justify-content:space-around;flex:1}
+.b-match{background:#fff;border:1.5px solid var(--gray-200);border-radius:8px;overflow:hidden;margin:7px 0}
+.b-match.champ{border:2px solid var(--navy)}
+.b-team{display:flex;align-items:center;padding:8px 10px;font-size:12px;font-weight:500;border-bottom:1px solid var(--gray-100);min-height:34px;gap:5px}
+.b-team:last-of-type{border-bottom:none}
+.b-team.won{background:var(--navy);color:#fff;font-weight:600}
+.b-team.tbd{color:var(--gray-400);font-style:italic;font-size:11px;background:var(--gray-100)}
+.b-team.seed-lbl{color:var(--carolina-dark);font-weight:600;font-size:11px}
+.b-score{margin-left:auto;font-weight:700;font-size:13px}
+.b-team.won .b-score{color:var(--carolina-light)}
+.b-info{font-size:10px;color:var(--gray-400);padding:3px 10px 5px;background:var(--gray-100);display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--gray-200)}
+.b-info.champ-info{background:var(--carolina-light);color:var(--navy);font-weight:600}
+.connector{width:30px;flex-shrink:0}
+
+/* Champ banner */
+.champ-banner{background:var(--navy);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:1.5rem}
+.trophy{width:42px;height:42px;border-radius:50%;background:#f5c842;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.champ-lbl{font-size:11px;color:var(--carolina-light);font-weight:500;text-transform:uppercase;letter-spacing:.06em}
+.champ-game{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:#fff;letter-spacing:.02em}
+
+/* Pitch */
+.pitch-row{display:grid;grid-template-columns:28px 1fr 55px 105px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--gray-100)}
+.pbar-wrap{height:6px;background:var(--gray-200);border-radius:3px;overflow:hidden;margin-top:3px}
+.pbar{height:6px;border-radius:3px;background:var(--carolina)}
+.pbar.warn{background:var(--warning)}
+.pbar.danger{background:var(--danger)}
+
+/* Loading */
+.loading{min-height:100vh;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.loading-ball{font-size:40px;animation:bounce 1s infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+
+/* Warning */
+.warn-box{background:var(--warning-bg);border:1px solid #f5c97a;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:var(--warning)}
+
+.empty{text-align:center;padding:3rem 1rem;color:var(--gray-400)}
+.empty .icon{font-size:40px;margin-bottom:.75rem}
+</style>
+</head>
+<body>
+
+<div id="loading" class="loading">
+  <div class="loading-ball">⚾</div>
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:.03em">West Pines Baseball</div>
+  <div style="font-size:14px;color:#a8cce8">Loading tournament data...</div>
+</div>
+
+<div id="app" style="display:none"></div>
+
+<script>
+var FS_URL = 'https://firestore.googleapis.com/v1/projects/west-pines-tournament/databases/(default)/documents/tournament/data';
+
+var STATE = {
+  tournament: {}, teams: {}, rosters: {}, pitchers: {}, parks: [],
+  pitchRules: {}, schedule: [], pitchLog: [], bracketResults: {},
+  seedings: {}, bracketSlots: [],
+  selDiv: '', view: 'schedule'
+};
+
+function safeParse(v, def) {
+  if (!v) return def;
+  try { return typeof v === 'string' ? JSON.parse(v) : v; } catch(e) { return def; }
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  var d = new Date(s + 'T00:00');
+  return d.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+}
+
+function fmtTime(s) {
+  if (!s) return '';
+  var parts = s.split(':');
+  var d = new Date();
+  d.setHours(+parts[0], +parts[1]);
+  return d.toLocaleTimeString('en-US', {hour:'numeric', minute:'2-digit'});
+}
+
+function shortPark(n) {
+  if (!n) return '';
+  return n.replace(/ Park$/i,'').replace(/ Regional$/i,'').replace(/ Athletic Complex$/i,'');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function getAllTeamsMap() {
+  var m = {};
+  var divs = Object.keys(STATE.teams);
+  for (var i=0; i<divs.length; i++) {
+    var arr = STATE.teams[divs[i]] || [];
+    for (var j=0; j<arr.length; j++) { m[arr[j].id] = arr[j]; }
+  }
+  return m;
+}
+
+function fetchData() {
+  fetch(FS_URL).then(function(res) {
+    if (!res.ok) return null;
+    return res.json();
+  }).then(function(doc) {
+    if (!doc || !doc.fields) return;
+    var raw = {};
+    var keys = Object.keys(doc.fields);
+    for (var i=0; i<keys.length; i++) {
+      var k = keys[i];
+      var v = doc.fields[k];
+      raw[k] = v.stringValue !== undefined ? v.stringValue : v.integerValue !== undefined ? v.integerValue : v.booleanValue !== undefined ? v.booleanValue : null;
+    }
+    STATE.tournament = safeParse(raw.wp_tournament, {});
+    STATE.teams = safeParse(raw.wp_teams, {});
+    STATE.rosters = safeParse(raw.wp_rosters, {});
+    STATE.pitchers = safeParse(raw.wp_pitchers, {});
+    STATE.parks = safeParse(raw.wp_parks, []);
+    STATE.pitchRules = safeParse(raw.wp_pitch_rules, {});
+    STATE.schedule = safeParse(raw.wp_schedule, []);
+    STATE.pitchLog = safeParse(raw.wp_pitch_log, []);
+    STATE.seedings = safeParse(raw.wp_seedings, {});
+    STATE.bracketSlots = safeParse(raw.wp_bracket_slots, []);
+    STATE.bracketResults = safeParse(raw.wp_bracket_results, {});
+    var divs = Object.keys(STATE.teams);
+    if (divs.length && !STATE.selDiv) STATE.selDiv = divs[0];
+    render();
+  }).catch(function(e) { console.warn('Fetch error:', e); });
+}
+
+function pitchTotals() {
+  var t = {};
+  for (var i=0; i<STATE.pitchLog.length; i++) {
+    var e = STATE.pitchLog[i];
+    var g = null;
+    for (var j=0; j<STATE.schedule.length; j++) { if (STATE.schedule[j].id === e.gameId) { g = STATE.schedule[j]; break; } }
+    var date = g ? g.date : '';
+    if (!t[e.playerId]) t[e.playerId] = {total:0, lastDate:''};
+    t[e.playerId].total += e.pitches;
+    if (date > t[e.playerId].lastDate) t[e.playerId].lastDate = date;
+  }
+  return t;
+}
+
+function getRestDays(pitches, rule) {
+  if (!rule || !rule.rest) return 0;
+  var arr = rule.rest.slice().reverse();
+  for (var i=0; i<arr.length; i++) { if (pitches >= arr[i].min) return arr[i].days; }
+  return 0;
+}
+
+function isBlocked(playerId, teamId) {
+  var atm = getAllTeamsMap();
+  var t = atm[teamId]; if (!t) return false;
+  var rule = STATE.pitchRules[t.divId]; if (!rule) return false;
+  var tots = pitchTotals();
+  var tot = tots[playerId]; if (!tot) return false;
+  var rest = getRestDays(tot.total, rule); if (!rest) return false;
+  var d = new Date(tot.lastDate + 'T00:00');
+  d.setDate(d.getDate() + rest + 1);
+  return d > new Date();
+}
+
+// ─── Division bracket slot lookup ────────────────────────────────
+function getDivisionBracket(divId, slots) {
+  function fs(h, a) {
+    if (!a) return {date:'',time:'',field:'',parkId:''};
+    for (var i=0;i<slots.length;i++) {
+      var s=slots[i];
+      if ((s.homeSeed===h&&s.awaySeed===a)||(s.homeSeed===a&&s.awaySeed===h)) return s;
+    }
+    return {date:'',time:'',field:'',parkId:''};
+  }
+  function fr(minRound, excludeSeed) {
+    var best = null;
+    for (var i=0;i<slots.length;i++) {
+      var s=slots[i];
+      if (s.round>=minRound) {
+        if (excludeSeed && (s.homeSeed===excludeSeed||s.awaySeed===excludeSeed)) continue;
+        if (!best || s.round < best.round) best = s;
+      }
+    }
+    return best || {date:'',time:'',field:'',parkId:''};
+  }
+  function fSeedRound(seed, minRound) {
+    for (var i=0;i<slots.length;i++) {
+      var s=slots[i];
+      if (s.round>=minRound&&(s.homeSeed===seed||s.awaySeed===seed)) return s;
+    }
+    return {date:'',time:'',field:'',parkId:''};
+  }
+  function fMaxRound() {
+    var best=null;
+    for (var i=0;i<slots.length;i++) {
+      if (!best||slots[i].round>best.round) best=slots[i];
+    }
+    return best||{date:'',time:'',field:'',parkId:''};
+  }
+
+  var maxSeed=0;
+  for (var i=0;i<slots.length;i++) {
+    if(slots[i].homeSeed>maxSeed) maxSeed=slots[i].homeSeed;
+    if((slots[i].awaySeed||0)>maxSeed) maxSeed=slots[i].awaySeed;
+  }
+
+  if (maxSeed<=4) {
+    // 14U — Game1:#2v#3, Game2:#1v#4, Championship
+    var g1=fs(2,3), g2=fs(1,4), ch=fMaxRound();
+    return [
+      [{top:2,bot:3,tl:null,bl:null,date:g1.date,time:g1.time,field:g1.field,parkId:g1.parkId},
+       {top:1,bot:4,tl:null,bl:null,date:g2.date,time:g2.time,field:g2.field,parkId:g2.parkId}],
+      [{top:0,bot:0,tl:'W: #2/#3',bl:'W: #1/#4',date:ch.date,time:ch.time,field:ch.field,parkId:ch.parkId}]
+    ];
+  } else if (maxSeed<=5) {
+    // 10U/12U — Col1:#1bye+#4v#5, Col2:SF1(#1vW4/5)+SF2(#2v#3), Col3:Champ
+    var r45=fs(4,5), sf1=fSeedRound(1,1), sf2=fs(2,3)||fr(1,1), ch=fMaxRound();
+    if (!sf1.time) sf1=fr(1,0);
+    return [
+      [{top:1,bot:null,tl:'#1 Seed',bl:null,date:'',time:'',field:'',parkId:''},
+       {top:4,bot:5,tl:null,bl:null,date:r45.date,time:r45.time,field:r45.field,parkId:r45.parkId}],
+      [{top:1,bot:0,tl:'#1 Seed',bl:'W: #4/#5',date:sf1.date,time:sf1.time,field:sf1.field,parkId:sf1.parkId},
+       {top:2,bot:3,tl:null,bl:null,date:sf2.date,time:sf2.time,field:sf2.field,parkId:sf2.parkId}],
+      [{top:0,bot:0,tl:'W: SF1',bl:'W: SF2',date:ch.date,time:ch.time,field:ch.field,parkId:ch.parkId}]
+    ];
+  } else if (maxSeed<=6) {
+    // 6U — Col1:#4v#5+#3v#6, Col2:SF1(#1vW4/5)+SF2(#2vW3/6), Col3:Champ
+    var g1=fs(4,5), g2=fs(3,6), sf1=fSeedRound(1,1), sf2=fSeedRound(2,1), ch=fMaxRound();
+    return [
+      [{top:4,bot:5,tl:null,bl:null,date:g1.date,time:g1.time,field:g1.field,parkId:g1.parkId},
+       {top:3,bot:6,tl:null,bl:null,date:g2.date,time:g2.time,field:g2.field,parkId:g2.parkId}],
+      [{top:1,bot:0,tl:'#1 Seed',bl:'W: #4/#5',date:sf1.date,time:sf1.time,field:sf1.field,parkId:sf1.parkId},
+       {top:2,bot:0,tl:'#2 Seed',bl:'W: #3/#6',date:sf2.date,time:sf2.time,field:sf2.field,parkId:sf2.parkId}],
+      [{top:0,bot:0,tl:'W: SF1',bl:'W: SF2',date:ch.date,time:ch.time,field:ch.field,parkId:ch.parkId}]
+    ];
+  } else {
+    // 8U — Col1:#1bye+#4v#5+#3v#6+#2v#7, Col2:SF1(#1vW4/5)+SF2(W2/7vW3/6), Col3:Champ
+    var g2=fs(4,5), g3=fs(3,6), g4=fs(2,7);
+    var sf1=fSeedRound(1,1), sf2=fr(1,1), ch=fMaxRound();
+    return [
+      [{top:1,bot:null,tl:'#1 Seed',bl:null,date:'',time:'',field:'',parkId:''},
+       {top:4,bot:5,tl:null,bl:null,date:g2.date,time:g2.time,field:g2.field,parkId:g2.parkId},
+       {top:3,bot:6,tl:null,bl:null,date:g3.date,time:g3.time,field:g3.field,parkId:g3.parkId},
+       {top:2,bot:7,tl:null,bl:null,date:g4.date,time:g4.time,field:g4.field,parkId:g4.parkId}],
+      [{top:1,bot:0,tl:'#1 Seed',bl:'W: #4/#5',date:sf1.date,time:sf1.time,field:sf1.field,parkId:sf1.parkId},
+       {top:0,bot:0,tl:'W: #2/#7',bl:'W: #3/#6',date:sf2.date,time:sf2.time,field:sf2.field,parkId:sf2.parkId}],
+      [{top:0,bot:0,tl:'W: SF1',bl:'W: SF2',date:ch.date,time:ch.time,field:ch.field,parkId:ch.parkId}]
+    ];
+  }
+}
+
+// ─── SVG Bracket Renderer ─────────────────────────────────────────
+function renderBracket(divId, bracketResults) {
+  var seeding = STATE.seedings[divId];
+  var finalized = seeding && seeding.finalized;
+  var slots = [];
+  for (var i=0;i<STATE.bracketSlots.length;i++) {
+    if (STATE.bracketSlots[i].divId===divId) slots.push(STATE.bracketSlots[i]);
+  }
+  if (!slots.length) return '<div class="empty"><div class="icon">&#127942;</div><p>Bracket coming soon</p></div>';
+
+  var cols = getDivisionBracket(divId, slots);
+  if (!cols||!cols.length) return '<div class="empty"><div class="icon">&#127942;</div><p>Bracket format not available</p></div>';
+
+  function seedLabel(seedVal, labelOverride) {
+    if (labelOverride) return labelOverride;
+    if (!seedVal) return 'TBD';
+    if (finalized && seeding && seeding.teams) {
+      for (var i=0;i<seeding.teams.length;i++) {
+        if (seeding.teams[i].seed===seedVal) return seeding.teams[i].name;
+      }
+    }
+    return '#'+seedVal+' Seed';
+  }
+
+  var LW=150, GAP=34, VSP=82, CW=LW+52, PX=20, PY=44;
+  var CL='#1a2f4e', CS='#8fa3bc';
+
+  // Compute col0 Y centers — each matchup gets a center
+  var col0 = cols[0];
+  var col0Centers = [];
+  var runY = PY;
+  for (var i=0;i<col0.length;i++) {
+    var isBye = col0[i].bot===null;
+    col0Centers.push(isBye ? runY : runY + GAP/2);
+    runY += (isBye ? GAP*0.5 : GAP) + VSP;
+  }
+
+  // Build centers for subsequent columns: midpoint of paired source rows
+  var allCenters = [col0Centers];
+  for (var ci=1;ci<cols.length;ci++) {
+    var prev = allCenters[ci-1];
+    var c = [];
+    for (var mi=0;mi<cols[ci].length;mi++) {
+      var ya = prev[mi*2], yb = prev[mi*2+1];
+      if (ya!==undefined&&yb!==undefined) c.push((ya+yb)/2);
+      else if (ya!==undefined) c.push(ya);
+      else c.push(PY+mi*150);
+    }
+    allCenters.push(c);
+  }
+
+  var svgH = runY + 20;
+  var svgW = PX*2 + cols.length*CW + 110;
+  var lines='', texts='';
+
+  for (var ci=0;ci<cols.length;ci++) {
+    var col=cols[ci], cens=allCenters[ci], x0=PX+ci*CW;
+    var isLast=ci===cols.length-1;
+    var lbl=isLast?'CHAMPIONSHIP':ci===cols.length-2?'SEMIFINALS':'ROUND 1';
+    texts+='<text x="'+(x0+LW/2)+'" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#3a7ab5" font-family="Barlow Condensed,sans-serif" letter-spacing="0.06em">'+esc(lbl)+'</text>';
+
+    for (var mi=0;mi<col.length;mi++) {
+      var m=col[mi], cy=cens[mi]!==undefined?cens[mi]:PY+mi*(GAP+VSP)+GAP/2;
+      var isBye=m.bot===null;
+      var y1=isBye?cy:cy-GAP/2, y2=cy+GAP/2;
+      var tTxt=seedLabel(m.top,m.tl), bTxt=isBye?null:seedLabel(m.bot,m.bl);
+      var pk=null; for(var pi=0;pi<STATE.parks.length;pi++){if(STATE.parks[pi].id===m.parkId){pk=STATE.parks[pi];break;}}
+      var metaParts=[];
+      if(m.date) metaParts.push(fmtDate(m.date));
+      if(m.time) metaParts.push(fmtTime(m.time));
+      if(m.field) metaParts.push(m.field.replace('Field ','F'));
+      else if(pk) metaParts.push(shortPark(pk.name));
+
+      lines+='<line x1="'+x0+'" y1="'+y1+'" x2="'+(x0+LW)+'" y2="'+y1+'" stroke="'+CL+'" stroke-width="1.5"/>';
+      var bkKey = divId+'-'+ci+'-'+mi;
+      var bkRes = bracketResults && bracketResults[bkKey];
+      var tWin = bkRes && bkRes.topScore > bkRes.botScore;
+      var bWin2 = bkRes && bkRes.botScore > bkRes.topScore;
+      var tScore = bkRes ? ' ('+bkRes.topScore+')' : '';
+      var bScore = bkRes ? ' ('+bkRes.botScore+')' : '';
+      texts+='<text x="'+(x0+4)+'" y="'+(y1-3)+'" font-size="11" fill="'+(tWin?'#2d9e6b':CL)+'" font-family="Barlow,sans-serif" font-weight="'+(tWin?700:500)+'">'+esc(tTxt+tScore)+'</text>';
+
+      if (isBye) {
+        texts+='<text x="'+(x0+LW+4)+'" y="'+(y1+4)+'" font-size="9" fill="'+CS+'" font-style="italic">— bye</text>';
+        if(!isLast) lines+='<line x1="'+(x0+LW)+'" y1="'+y1+'" x2="'+(x0+CW)+'" y2="'+y1+'" stroke="'+CL+'" stroke-width="1.5"/>';
+      } else {
+        lines+='<line x1="'+x0+'" y1="'+y2+'" x2="'+(x0+LW)+'" y2="'+y2+'" stroke="'+CL+'" stroke-width="1.5"/>';
+        texts+='<text x="'+(x0+4)+'" y="'+(y2-3)+'" font-size="11" fill="'+(bWin2?'#2d9e6b':CL)+'" font-family="Barlow,sans-serif" font-weight="'+(bWin2?700:500)+'">'+esc((bTxt||'')+bScore)+'</text>';
+        lines+='<line x1="'+(x0+LW)+'" y1="'+y1+'" x2="'+(x0+LW)+'" y2="'+y2+'" stroke="'+CL+'" stroke-width="1.5"/>';
+        if(!isLast) lines+='<line x1="'+(x0+LW)+'" y1="'+cy+'" x2="'+(x0+CW)+'" y2="'+cy+'" stroke="'+CL+'" stroke-width="1.5"/>';
+      }
+      if (metaParts.length) {
+        var my=isBye?y1+14:y2+13;
+        texts+='<text x="'+(x0+LW/2)+'" y="'+my+'" text-anchor="middle" font-size="8" fill="'+CS+'" font-family="Barlow,sans-serif">'+esc(metaParts.join(' · '))+'</text>';
+      }
+    }
+
+    // Vertical connectors to next col
+    if (ci<cols.length-1) {
+      var nextX=x0+CW, nCens=allCenters[ci+1];
+      for (var ni=0;ni<cols[ci+1].length;ni++) {
+        var ya=cens[ni*2], yb=cens[ni*2+1];
+        if (ya!==undefined&&yb!==undefined) {
+          lines+='<line x1="'+nextX+'" y1="'+ya+'" x2="'+nextX+'" y2="'+yb+'" stroke="'+CL+'" stroke-width="1.5"/>';
+        }
+      }
+    }
+  }
+
+  // Winner line from championship top line
+  var lc=allCenters[allCenters.length-1], lastM=cols[cols.length-1][0];
+  var wY=(lc[0]!==undefined)?(lastM.bot!==null?lc[0]-GAP/2:lc[0]):svgH/2;
+  var wX=PX+cols.length*CW;
+  lines+='<line x1="'+wX+'" y1="'+wY+'" x2="'+(wX+55)+'" y2="'+wY+'" stroke="'+CL+'" stroke-width="1.5"/>';
+  texts+='<text x="'+(wX+60)+'" y="'+(wY+4)+'" font-size="12" font-weight="700" fill="'+CL+'" font-family="Barlow Condensed,sans-serif" letter-spacing="0.04em">WINNER</text>';
+
+  if (!finalized) {
+    texts+='<text x="'+(svgW/2)+'" y="'+(svgH+15)+'" text-anchor="middle" font-size="9" fill="'+CS+'" font-style="italic">Team names appear after seeding is finalized</text>';
+  }
+
+  var bannerHtml = '';
+  if (!finalized) {
+    bannerHtml = '<div style="background:#fef3e2;border:1px solid #f5c97a;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;color:#c97d10">'
+      + '&#9203; <strong>Seeding not yet finalized</strong> — showing seed placeholders. Team names will appear once standings are finalized.'
+      + '</div>';
+  }
+  return bannerHtml + '<div style="overflow-x:auto;padding:0.5rem 0"><svg width="'+svgW+'" height="'+(svgH+25)+'" viewBox="0 0 '+svgW+' '+(svgH+25)+'" style="display:block;max-width:100%;overflow:visible">'+lines+texts+'</svg></div>';
+}
+
+
+function render() {
+  var atm = getAllTeamsMap();
+  var divs = Object.keys(STATE.teams);
+  var t = STATE.tournament;
+  var tots = pitchTotals();
+
+  document.getElementById('loading').style.display = 'none';
+  var app = document.getElementById('app');
+  app.style.display = 'block';
+
+  if (!divs.length) {
+    app.innerHTML = '<div class="hdr"><div class="hdr-inner"><div><div class="hdr-title">West Pines Baseball</div><div class="hdr-sub">Tournament schedule</div></div></div></div><div class="content"><div class="empty"><div class="icon">&#9918;</div><p>Tournament data loading — please refresh in a moment.</p></div></div>';
+    return;
+  }
+
+  if (!STATE.selDiv) STATE.selDiv = divs[0];
+
+  var logoHTML = t.logo ? '<img src="'+esc(t.logo)+'" class="hdr-logo" alt="logo"/>' : '';
+  var subText = (t.startDate&&t.endDate) ? fmtDate(t.startDate)+' – '+fmtDate(t.endDate) : 'Tournament schedule';
+
+  var pillsHTML = '';
+  for (var pi=0; pi<divs.length; pi++) {
+    var d = divs[pi];
+    pillsHTML += '<button class="pill' + (d===STATE.selDiv?' on':'') + '" onclick="setDiv(&quot;' + esc(d) + '&quot;)">' + esc(d) + '</button>';
+  }
+
+  var tabArr = ['schedule','standings','bracket','pitches'];
+  var tabLbl = {'schedule':'Schedule','standings':'Standings','bracket':'Bracket','pitches':'Pitch counts'};
+  var tabsHTML = '';
+  for (var ti=0; ti<tabArr.length; ti++) {
+    var v = tabArr[ti];
+    tabsHTML += '<button class="tab' + (v===STATE.view?' on':'') + '" onclick="setView(&quot;' + v + '&quot;)">' + tabLbl[v] + '</button>';
+  }
+
+  var div = STATE.selDiv;
+  var divTeams = STATE.teams[div] || [];
+  var mainHTML = '';
+
+  if (STATE.view === 'schedule') {
+    var games = [];
+    for (var gi=0; gi<STATE.schedule.length; gi++) {
+      var g = STATE.schedule[gi];
+      if (atm[g.homeId] && atm[g.homeId].divId===div && !g.isBracket) games.push(g);
+    }
+    games.sort(function(a,b) { return a.date>b.date?1:a.date<b.date?-1:a.time>b.time?1:-1; });
+    if (!games.length) mainHTML = '<div class="empty"><div class="icon">&#128197;</div><p>No games scheduled yet for '+esc(div)+'</p></div>';
+    for (var ggi=0; ggi<games.length; ggi++) {
+      var gg = games[ggi];
+      var ht = atm[gg.homeId], at2 = atm[gg.awayId];
+      var pk2 = null;
+      for (var pki=0; pki<STATE.parks.length; pki++) { if (STATE.parks[pki].id===gg.parkId) { pk2=STATE.parks[pki]; break; } }
+      var loc = pk2 ? shortPark(pk2.name)+' · '+gg.field.replace('Field ','F') : '—';
+      var hw2 = gg.complete&&parseInt(gg.homeScore)>parseInt(gg.awayScore);
+      var aw2 = gg.complete&&parseInt(gg.awayScore)>parseInt(gg.homeScore);
+      mainHTML += '<div class="card"><div class="game-teams"><span style="color:#0d1e33;font-weight:700">'+(ht?esc(ht.name):'TBD')+'</span><span style="color:var(--carolina-dark);font-size:12px;font-weight:500;margin:0 2px">vs</span><span style="color:#0d1e33;font-weight:700">'+(at2?esc(at2.name):'TBD')+'</span>'+(gg.complete?'<span class="badge b-ok" style="margin-left:auto">'+gg.homeScore+' – '+gg.awayScore+'</span>':'')+'</div><div class="game-meta" style="color:#4a6380;margin-top:3px">'+fmtDate(gg.date)+' '+fmtTime(gg.time)+' · '+esc(loc)+'</div></div>';
+    }
+  }
+
+  if (STATE.view === 'bracket') mainHTML = renderBracket(div, STATE.bracketResults);
+
+  if (STATE.view === 'standings') {
+    mainHTML = renderStandings(div, atm);
+  }
+
+  if (STATE.view === 'pitches') {
+    for (var dti=0; dti<divTeams.length; dti++) {
+      var team = divTeams[dti];
+      var rule = STATE.pitchRules[div];
+      var roster = STATE.pitchers[team.id] || STATE.rosters[team.id] || [];
+      var rows = '';
+      for (var ri3=0; ri3<roster.length; ri3++) {
+        var pl = roster[ri3];
+        if (!tots[pl.id]) continue;
+        var tot = tots[pl.id];
+        var blocked = isBlocked(pl.id, team.id);
+
+        // Daily pitches — sum all entries for the last game date
+        var lastDate = tot.lastDate || tot.lastGameDate || '';
+        var dailyPitches = 0;
+        if (lastDate && tot.dailyTotals) {
+          dailyPitches = tot.dailyTotals[lastDate] || 0;
+        } else {
+          // fallback: sum pitch log for this player on last date
+          for (var pli=0; pli<STATE.pitchLog.length; pli++) {
+            var entry = STATE.pitchLog[pli];
+            if (entry.playerId === pl.id) {
+              var eg = STATE.schedule.find(function(g) { return g.id === entry.gameId; });
+              var edate = eg ? eg.date : (entry.date || '');
+              if (edate === lastDate) dailyPitches += entry.pitches;
+            }
+          }
+        }
+
+        var weeklyLimit = rule && rule.weeklyLimit ? rule.weeklyLimit : null;
+        var dailyLimit = rule ? rule.limit : null;
+        var weekMax = weeklyLimit || dailyLimit || 0;
+        var pct = weekMax ? Math.min(100, Math.round(tot.total/weekMax*100)) : 0;
+        var warn = rule && !blocked && (
+          (weeklyLimit && tot.total >= weeklyLimit*0.85) ||
+          (!weeklyLimit && tot.total >= dailyLimit*0.85)
+        );
+        var barCls = blocked?'danger':warn?'warn':'';
+
+        // Status badge — show weekly total vs weekly limit
+        var badge = blocked
+          ? '<span class="badge b-block">Unavailable</span>'
+          : warn
+            ? '<span class="badge b-warn">'+(weeklyLimit?tot.total+'/'+weeklyLimit:tot.total+'/'+dailyLimit)+'</span>'
+            : '<span class="badge b-ok">'+(weeklyLimit?tot.total+'/'+weeklyLimit:tot.total+(dailyLimit?'/'+dailyLimit:''))+'</span>';
+
+        // Daily vs weekly sub-line
+        var subLine = '';
+        if (rule && weeklyLimit) {
+          subLine = '<div style="font-size:10px;color:var(--gray-400);margin-top:2px">Today: '+dailyPitches+'/'+dailyLimit+' &nbsp;&middot;&nbsp; Tournament: '+tot.total+'/'+weeklyLimit+'</div>';
+        } else if (rule) {
+          subLine = '<div style="font-size:10px;color:var(--gray-400);margin-top:2px">Today: '+dailyPitches+'/'+dailyLimit+'</div>';
+        }
+
+        rows += '<div class="pitch-row" style="grid-template-columns:28px 1fr 55px 120px">'
+          +'<span style="font-size:12px;color:var(--gray-400)">#'+esc(pl.jersey)+'</span>'
+          +'<div>'
+            +'<div style="font-size:13px;font-weight:500">'+esc(pl.name)+'</div>'
+            +(rule?'<div class="pbar-wrap" style="margin-top:3px"><div class="pbar '+barCls+'" style="width:'+pct+'%"></div></div>':'')
+            +subLine
+          +'</div>'
+          +'<span style="font-size:13px;font-weight:700;color:var(--navy)">'+tot.total+'</span>'
+          +badge
+          +'</div>';
+      }
+
+      if (rows) {
+        var limitBadge = '';
+        if (rule) {
+          limitBadge = rule.weeklyLimit
+            ? '<span class="badge b-gray">Daily: '+rule.limit+' &nbsp;|&nbsp; Weekly: '+rule.weeklyLimit+'</span>'
+            : '<span class="badge b-gray">Limit: '+rule.limit+'</span>';
+        }
+        mainHTML += '<div class="card" style="margin-bottom:1rem">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--gray-100)">'
+          +'<span style="font-family:Barlow Condensed,sans-serif;font-size:17px;font-weight:600">'+esc(team.name)+'</span>'
+          +limitBadge
+          +'</div>'
+          +rows+'</div>';
+      }
+    }
+    if (!mainHTML) mainHTML = '<div class="empty"><div class="icon">&#9918;</div><p>No pitch counts recorded yet</p></div>';
+  }
+
+  app.innerHTML = '<div class="hdr"><div class="hdr-inner">'+logoHTML+'<div><div class="hdr-title">'+esc(t.name||'West Pines Baseball')+'</div><div class="hdr-sub">'+esc(subText)+'</div></div></div></div><div class="content"><div class="pills">'+pillsHTML+'</div><div class="tabs">'+tabsHTML+'</div>'+mainHTML+'</div>';
+}
+
+function setDiv(d) { STATE.selDiv = d; render(); }
+function setView(v) { STATE.view = v; render(); }
+
+fetchData();
+setTimeout(function() {
+  if (document.getElementById('loading').style.display !== 'none') {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    render();
+  }
+}, 3000);
+setInterval(fetchData, 30000);
+</script>
+</body>
+</html>
