@@ -211,24 +211,83 @@ function buildSlotRounds(divId) {
   for (var i=0; i<STATE.bracketSlots.length; i++) {
     if (STATE.bracketSlots[i].divId === divId) slots.push(STATE.bracketSlots[i]);
   }
-  slots.sort(function(a,b) { return a.round - b.round; });
-  var rounds = [];
-  for (var j=0; j<slots.length; j++) {
-    var s = slots[j];
-    if (!rounds[s.round]) rounds[s.round] = [];
-    rounds[s.round].push(s);
+  if (!slots.length) return [];
+
+  // Find slot by seed matchup
+  function findSlot(hs, as) {
+    for (var i=0; i<slots.length; i++) {
+      var s = slots[i];
+      if ((s.homeSeed===hs && s.awaySeed===as) ||
+          (s.homeSeed===as && s.awaySeed===hs) ||
+          (hs && s.homeSeed===hs && !as) ||
+          (as && s.homeSeed===as && !hs)) return s;
+    }
+    return {};
   }
-  var result = [];
-  for (var k=0; k<rounds.length; k++) { if (rounds[k]) result.push(rounds[k]); }
-  return result;
+
+  // Determine format from max seed in slots
+  var maxSeed = 0;
+  for (var j=0; j<slots.length; j++) {
+    if (slots[j].homeSeed > maxSeed) maxSeed = slots[j].homeSeed;
+    if ((slots[j].awaySeed||0) > maxSeed) maxSeed = slots[j].awaySeed;
+  }
+
+  var visualRounds;
+  if (maxSeed <= 4) {
+    // 14U: 4-team
+    visualRounds = [
+      [{homeSeed:1,awaySeed:4},{homeSeed:2,awaySeed:3}],
+      [{homeSeed:1,awaySeed:2}]
+    ];
+  } else if (maxSeed <= 5) {
+    // 10U/12U: 5-team
+    visualRounds = [
+      [{homeSeed:4,awaySeed:5}],
+      [{homeSeed:3,awaySeed:null},{homeSeed:1,awaySeed:null},{homeSeed:2,awaySeed:null}],
+      [{homeSeed:1,awaySeed:2}]
+    ];
+  } else if (maxSeed <= 6) {
+    // 6U: 6-team
+    visualRounds = [
+      [{homeSeed:3,awaySeed:6},{homeSeed:4,awaySeed:5}],
+      [{homeSeed:1,awaySeed:null},{homeSeed:2,awaySeed:null}],
+      [{homeSeed:1,awaySeed:2}]
+    ];
+  } else {
+    // 8U: 7-team
+    visualRounds = [
+      [{homeSeed:1,awaySeed:null},{homeSeed:4,awaySeed:5},{homeSeed:2,awaySeed:7},{homeSeed:3,awaySeed:6}],
+      [{homeSeed:1,awaySeed:null},{homeSeed:2,awaySeed:3}],
+      [{homeSeed:1,awaySeed:2}]
+    ];
+  }
+
+  // Attach slot data (times/dates/fields) to each visual matchup
+  return visualRounds.map(function(round) {
+    return round.map(function(m) {
+      var s = findSlot(m.homeSeed, m.awaySeed);
+      return {
+        homeSeed: m.homeSeed,
+        awaySeed: m.awaySeed,
+        date: s.date || '',
+        time: s.time || '',
+        field: s.field || '',
+        parkId: s.parkId || ''
+      };
+    });
+  });
 }
 
 function feederLabel(rounds, ri, mi, side) {
   if (ri === 0) return null;
   var prev = rounds[ri-1];
   if (!prev) return null;
-  var feeder = prev[mi*2+side];
+  // For semifinals/champ rounds, find which previous game feeds this slot
+  // Each next-round slot is fed by pairs from previous round
+  var feederIdx = mi * 2 + side;
+  var feeder = prev[feederIdx];
   if (!feeder) return null;
+  if (!feeder.awaySeed) return '#' + feeder.homeSeed + ' seed';
   return 'W: #' + feeder.homeSeed + '/#' + feeder.awaySeed;
 }
 
