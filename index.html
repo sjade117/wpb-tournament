@@ -101,7 +101,7 @@ var FS_URL = 'https://firestore.googleapis.com/v1/projects/west-pines-tournament
 
 var STATE = {
   tournament: {}, teams: {}, rosters: {}, pitchers: {}, parks: [],
-  pitchRules: {}, schedule: [], pitchLog: [],
+  pitchRules: {}, schedule: [], pitchLog: [], bracketResults: {},
   seedings: {}, bracketSlots: [],
   selDiv: '', view: 'schedule'
 };
@@ -167,6 +167,7 @@ function fetchData() {
     STATE.pitchLog = safeParse(raw.wp_pitch_log, []);
     STATE.seedings = safeParse(raw.wp_seedings, {});
     STATE.bracketSlots = safeParse(raw.wp_bracket_slots, []);
+    STATE.bracketResults = safeParse(raw.wp_bracket_results, {});
     var divs = Object.keys(STATE.teams);
     if (divs.length && !STATE.selDiv) STATE.selDiv = divs[0];
     render();
@@ -294,7 +295,7 @@ function getDivisionBracket(divId, slots) {
 }
 
 // ─── SVG Bracket Renderer ─────────────────────────────────────────
-function renderBracket(divId) {
+function renderBracket(divId, bracketResults) {
   var seeding = STATE.seedings[divId];
   var finalized = seeding && seeding.finalized;
   var slots = [];
@@ -367,14 +368,20 @@ function renderBracket(divId) {
       else if(pk) metaParts.push(shortPark(pk.name));
 
       lines+='<line x1="'+x0+'" y1="'+y1+'" x2="'+(x0+LW)+'" y2="'+y1+'" stroke="'+CL+'" stroke-width="1.5"/>';
-      texts+='<text x="'+(x0+4)+'" y="'+(y1-3)+'" font-size="11" fill="'+CL+'" font-family="Barlow,sans-serif" font-weight="500">'+esc(tTxt)+'</text>';
+      var bkKey = divId+'-'+ci+'-'+mi;
+      var bkRes = bracketResults && bracketResults[bkKey];
+      var tWin = bkRes && bkRes.topScore > bkRes.botScore;
+      var bWin2 = bkRes && bkRes.botScore > bkRes.topScore;
+      var tScore = bkRes ? ' ('+bkRes.topScore+')' : '';
+      var bScore = bkRes ? ' ('+bkRes.botScore+')' : '';
+      texts+='<text x="'+(x0+4)+'" y="'+(y1-3)+'" font-size="11" fill="'+(tWin?'#2d9e6b':CL)+'" font-family="Barlow,sans-serif" font-weight="'+(tWin?700:500)+'">'+esc(tTxt+tScore)+'</text>';
 
       if (isBye) {
         texts+='<text x="'+(x0+LW+4)+'" y="'+(y1+4)+'" font-size="9" fill="'+CS+'" font-style="italic">— bye</text>';
         if(!isLast) lines+='<line x1="'+(x0+LW)+'" y1="'+y1+'" x2="'+(x0+CW)+'" y2="'+y1+'" stroke="'+CL+'" stroke-width="1.5"/>';
       } else {
         lines+='<line x1="'+x0+'" y1="'+y2+'" x2="'+(x0+LW)+'" y2="'+y2+'" stroke="'+CL+'" stroke-width="1.5"/>';
-        texts+='<text x="'+(x0+4)+'" y="'+(y2-3)+'" font-size="11" fill="'+CL+'" font-family="Barlow,sans-serif" font-weight="500">'+esc(bTxt||'')+'</text>';
+        texts+='<text x="'+(x0+4)+'" y="'+(y2-3)+'" font-size="11" fill="'+(bWin2?'#2d9e6b':CL)+'" font-family="Barlow,sans-serif" font-weight="'+(bWin2?700:500)+'">'+esc((bTxt||'')+bScore)+'</text>';
         lines+='<line x1="'+(x0+LW)+'" y1="'+y1+'" x2="'+(x0+LW)+'" y2="'+y2+'" stroke="'+CL+'" stroke-width="1.5"/>';
         if(!isLast) lines+='<line x1="'+(x0+LW)+'" y1="'+cy+'" x2="'+(x0+CW)+'" y2="'+cy+'" stroke="'+CL+'" stroke-width="1.5"/>';
       }
@@ -914,7 +921,7 @@ function render() {
     }
   }
 
-  if (STATE.view === 'bracket') mainHTML = renderBracket(div);
+  if (STATE.view === 'bracket') mainHTML = renderBracket(div, STATE.bracketResults);
 
   if (STATE.view === 'standings') {
     mainHTML = renderStandings(div, atm);
