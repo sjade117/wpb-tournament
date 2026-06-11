@@ -566,7 +566,6 @@ function render() {
     for (var dti=0; dti<divTeams.length; dti++) {
       var team = divTeams[dti];
       var rule = STATE.pitchRules[div];
-      // Use on-the-fly pitchers if available, fall back to rosters
       var roster = STATE.pitchers[team.id] || STATE.rosters[team.id] || [];
       var rows = '';
       for (var ri3=0; ri3<roster.length; ri3++) {
@@ -574,13 +573,75 @@ function render() {
         if (!tots[pl.id]) continue;
         var tot = tots[pl.id];
         var blocked = isBlocked(pl.id, team.id);
-        var warn = rule&&tot.total>=rule.limit*0.85&&!blocked;
-        var pct = rule ? Math.min(100, Math.round(tot.total/rule.limit*100)) : 0;
+
+        // Daily pitches — sum all entries for the last game date
+        var lastDate = tot.lastDate || tot.lastGameDate || '';
+        var dailyPitches = 0;
+        if (lastDate && tot.dailyTotals) {
+          dailyPitches = tot.dailyTotals[lastDate] || 0;
+        } else {
+          // fallback: sum pitch log for this player on last date
+          for (var pli=0; pli<STATE.pitchLog.length; pli++) {
+            var entry = STATE.pitchLog[pli];
+            if (entry.playerId === pl.id) {
+              var eg = STATE.schedule.find(function(g) { return g.id === entry.gameId; });
+              var edate = eg ? eg.date : (entry.date || '');
+              if (edate === lastDate) dailyPitches += entry.pitches;
+            }
+          }
+        }
+
+        var weeklyLimit = rule && rule.weeklyLimit ? rule.weeklyLimit : null;
+        var dailyLimit = rule ? rule.limit : null;
+        var weekMax = weeklyLimit || dailyLimit || 0;
+        var pct = weekMax ? Math.min(100, Math.round(tot.total/weekMax*100)) : 0;
+        var warn = rule && !blocked && (
+          (weeklyLimit && tot.total >= weeklyLimit*0.85) ||
+          (!weeklyLimit && tot.total >= dailyLimit*0.85)
+        );
         var barCls = blocked?'danger':warn?'warn':'';
-        var badge = blocked ? '<span class="badge b-block">Unavailable</span>' : warn ? '<span class="badge b-warn">'+tot.total+'/'+rule.limit+'</span>' : '<span class="badge b-ok">'+tot.total+(rule?'/'+rule.limit:'')+'</span>';
-        rows += '<div class="pitch-row"><span style="font-size:12px;color:var(--gray-400)">#'+esc(pl.jersey)+'</span><div><div style="font-size:13px;font-weight:500">'+esc(pl.name)+'</div>'+(rule?'<div class="pbar-wrap"><div class="pbar '+barCls+'" style="width:'+pct+'%"></div></div>':'')+'</div><span style="font-size:13px;font-weight:700">'+tot.total+'</span>'+badge+'</div>';
+
+        // Status badge — show weekly total vs weekly limit
+        var badge = blocked
+          ? '<span class="badge b-block">Unavailable</span>'
+          : warn
+            ? '<span class="badge b-warn">'+(weeklyLimit?tot.total+'/'+weeklyLimit:tot.total+'/'+dailyLimit)+'</span>'
+            : '<span class="badge b-ok">'+(weeklyLimit?tot.total+'/'+weeklyLimit:tot.total+(dailyLimit?'/'+dailyLimit:''))+'</span>';
+
+        // Daily vs weekly sub-line
+        var subLine = '';
+        if (rule && weeklyLimit) {
+          subLine = '<div style="font-size:10px;color:var(--gray-400);margin-top:2px">Today: '+dailyPitches+'/'+dailyLimit+' &nbsp;&middot;&nbsp; Tournament: '+tot.total+'/'+weeklyLimit+'</div>';
+        } else if (rule) {
+          subLine = '<div style="font-size:10px;color:var(--gray-400);margin-top:2px">Today: '+dailyPitches+'/'+dailyLimit+'</div>';
+        }
+
+        rows += '<div class="pitch-row" style="grid-template-columns:28px 1fr 55px 120px">'
+          +'<span style="font-size:12px;color:var(--gray-400)">#'+esc(pl.jersey)+'</span>'
+          +'<div>'
+            +'<div style="font-size:13px;font-weight:500">'+esc(pl.name)+'</div>'
+            +(rule?'<div class="pbar-wrap" style="margin-top:3px"><div class="pbar '+barCls+'" style="width:'+pct+'%"></div></div>':'')
+            +subLine
+          +'</div>'
+          +'<span style="font-size:13px;font-weight:700;color:var(--navy)">'+tot.total+'</span>'
+          +badge
+          +'</div>';
       }
-      if (rows) mainHTML += '<div class="card" style="margin-bottom:1rem"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--gray-100)"><span style="font-family:Barlow Condensed,sans-serif;font-size:17px;font-weight:600">'+esc(team.name)+'</span>'+(rule?'<span class="badge b-gray">Limit: '+rule.limit+'</span>':'')+'</div>'+rows+'</div>';
+
+      if (rows) {
+        var limitBadge = '';
+        if (rule) {
+          limitBadge = rule.weeklyLimit
+            ? '<span class="badge b-gray">Daily: '+rule.limit+' &nbsp;|&nbsp; Weekly: '+rule.weeklyLimit+'</span>'
+            : '<span class="badge b-gray">Limit: '+rule.limit+'</span>';
+        }
+        mainHTML += '<div class="card" style="margin-bottom:1rem">'
+          +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--gray-100)">'
+          +'<span style="font-family:Barlow Condensed,sans-serif;font-size:17px;font-weight:600">'+esc(team.name)+'</span>'
+          +limitBadge
+          +'</div>'
+          +rows+'</div>';
+      }
     }
     if (!mainHTML) mainHTML = '<div class="empty"><div class="icon">&#9918;</div><p>No pitch counts recorded yet</p></div>';
   }
