@@ -328,26 +328,49 @@ function renderBracket(divId) {
   var n = seededTeams.length;
   if (!n) return '<div class="empty"><div class="icon">&#127942;</div><p>No teams seeded yet</p></div>';
 
-  var size = Math.pow(2, Math.ceil(Math.log2(n)));
-  var padded = seededTeams.slice();
-  while (padded.length < size) padded.push(null);
-
   var divSlots = [];
   for (var dsi=0; dsi<STATE.bracketSlots.length; dsi++) {
     if (STATE.bracketSlots[dsi].divId===divId) divSlots.push(STATE.bracketSlots[dsi]);
   }
 
-  var slots0 = [];
-  for (var s0i=0; s0i<divSlots.length; s0i++) { if (divSlots[s0i].round===0) slots0.push(divSlots[s0i]); }
+  // Division-specific bracket formats: [homeSeed, awaySeed], null away = bye
+  var FORMATS = {
+    4: [[1,4],[2,3]],
+    5: [[4,5],[3,null],[1,null],[2,null]],
+    6: [[3,6],[4,5],[1,null],[2,null]],
+    7: [[1,null],[4,5],[2,7],[3,6]],
+    8: [[1,8],[4,5],[2,7],[3,6]]
+  };
+  var fmt = FORMATS[n];
+  if (!fmt) {
+    var sz = Math.pow(2, Math.ceil(Math.log2(n)));
+    fmt = FORMATS[sz] || [];
+  }
+  if (!fmt.length) return '<div class="empty"><div class="icon">&#127942;</div><p>Bracket format not available</p></div>';
 
+  // Build round 1
   var rounds = [];
   var round1 = [];
-  for (var ri2=0; ri2<size/2; ri2++) {
-    var t1=padded[ri2], t2=padded[size-1-ri2];
-    var s1=(t1&&t1.seed)||ri2+1, s2=t2?(t2.seed||size-ri2):null;
+  for (var fi=0; fi<fmt.length; fi++) {
+    var hs=fmt[fi][0], as=fmt[fi][1];
+    var t1=null, t2=null;
+    for (var si=0; si<seededTeams.length; si++) {
+      if (seededTeams[si].seed===hs) t1=seededTeams[si];
+      if (as && seededTeams[si].seed===as) t2=seededTeams[si];
+    }
+    var bye = !as;
     var slot2=null;
-    for (var si=0; si<slots0.length; si++) { if (slots0[si].homeSeed===s1||slots0[si].awaySeed===s1) { slot2=slots0[si]; break; } }
-    round1.push({t1:t1, t2:t2, bye:!t2, s1:s1, s2:s2, slot:slot2, game:null});
+    for (var sli=0; sli<divSlots.length; sli++) {
+      if (divSlots[sli].round===0 && (divSlots[sli].homeSeed===hs||divSlots[sli].awaySeed===hs)) { slot2=divSlots[sli]; break; }
+    }
+    var game1=null;
+    if (t1&&t2) {
+      for (var gi2=0; gi2<poolGames.length; gi2++) {
+        var pg=poolGames[gi2], pht=atm[pg.homeId], pat=atm[pg.awayId];
+        if (((pht&&pht.name)===t1.name||(pat&&pat.name)===t1.name)&&((pht&&pht.name)===t2.name||(pat&&pat.name)===t2.name)) { game1=pg; break; }
+      }
+    }
+    round1.push({t1:t1, t2:t2, bye:bye, s1:hs, s2:as||null, slot:slot2, game:game1});
   }
   rounds.push(round1);
   var prev = round1;
@@ -365,7 +388,14 @@ function renderBracket(divId) {
       var ns1 = m1.bye ? m1.s1 : (st1||'');
       var ns2 = (m2&&m2.bye) ? m2.s1 : (st2||'');
       var slotN = slotsR[Math.floor(pi2/2)] || null;
-      next.push({t1:w1?{name:w1}:null, t2:w2?{name:w2}:null, bye:false, s1:ns1, s2:ns2, slot:slotN, game:null});
+      var gameN=null;
+      if (w1&&w2) {
+        for (var gni=0; gni<poolGames.length; gni++) {
+          var gn=poolGames[gni], gnh=atm[gn.homeId], gna=atm[gn.awayId];
+          if (((gnh&&gnh.name)===w1||(gna&&gna.name)===w1)&&((gnh&&gnh.name)===w2||(gna&&gna.name)===w2)) { gameN=gn; break; }
+        }
+      }
+      next.push({t1:w1?{name:w1}:null, t2:w2?{name:w2}:null, bye:false, s1:ns1, s2:ns2, slot:slotN, game:gameN});
     }
     rounds.push(next);
     prev=next; rIdx++;
