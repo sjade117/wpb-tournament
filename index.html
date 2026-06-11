@@ -213,70 +213,80 @@ function buildSlotRounds(divId) {
   }
   if (!slots.length) return [];
 
-  // Find slot by seed matchup
   function findSlot(hs, as) {
     for (var i=0; i<slots.length; i++) {
       var s = slots[i];
-      if ((s.homeSeed===hs && s.awaySeed===as) ||
-          (s.homeSeed===as && s.awaySeed===hs) ||
-          (hs && s.homeSeed===hs && !as) ||
-          (as && s.homeSeed===as && !hs)) return s;
+      if (hs && as && ((s.homeSeed===hs&&s.awaySeed===as)||(s.homeSeed===as&&s.awaySeed===hs))) return s;
+    }
+    // fallback: match by home seed
+    for (var j=0; j<slots.length; j++) {
+      if (slots[j].homeSeed===hs||slots[j].awaySeed===hs) return slots[j];
     }
     return {};
   }
 
-  // Determine format from max seed in slots
-  var maxSeed = 0;
-  for (var j=0; j<slots.length; j++) {
-    if (slots[j].homeSeed > maxSeed) maxSeed = slots[j].homeSeed;
-    if ((slots[j].awaySeed||0) > maxSeed) maxSeed = slots[j].awaySeed;
+  function findSlotRound(minRound, hs, notSeed) {
+    for (var i=0; i<slots.length; i++) {
+      var s = slots[i];
+      if (s.round >= minRound && (s.homeSeed===hs||s.awaySeed===hs)) return s;
+    }
+    for (var j=0; j<slots.length; j++) {
+      if (slots[j].round >= minRound && slots[j].homeSeed !== notSeed && slots[j].awaySeed !== notSeed) return slots[j];
+    }
+    return {};
   }
+
+  var maxSeed = 0;
+  for (var i=0; i<slots.length; i++) {
+    if (slots[i].homeSeed > maxSeed) maxSeed = slots[i].homeSeed;
+    if ((slots[i].awaySeed||0) > maxSeed) maxSeed = slots[i].awaySeed;
+  }
+
+  function ms(s) { return {date:s.date||'',time:s.time||'',field:s.field||'',parkId:s.parkId||''}; }
 
   var visualRounds;
   if (maxSeed <= 4) {
-    // 14U: 4-team
+    var r1a=findSlot(2,3), r1b=findSlot(1,4), ch=findSlot(1,2);
     visualRounds = [
-      [{homeSeed:1,awaySeed:4},{homeSeed:2,awaySeed:3}],
-      [{homeSeed:1,awaySeed:2}]
+      [{homeSeed:1,awaySeed:4,      ...ms(r1b)},{homeSeed:2,awaySeed:3,      ...ms(r1a)}],
+      [{homeSeed:1,awaySeed:2,      ...ms(ch)}]
     ];
   } else if (maxSeed <= 5) {
-    // 10U/12U: 5-team
+    var r1=findSlot(4,5), sf1=findSlot(2,3), sf2=findSlot(1,4), ch=findSlot(1,2);
     visualRounds = [
-      [{homeSeed:4,awaySeed:5}],
-      [{homeSeed:3,awaySeed:null},{homeSeed:1,awaySeed:null},{homeSeed:2,awaySeed:null}],
-      [{homeSeed:1,awaySeed:2}]
+      [{homeSeed:4,awaySeed:5,                            ...ms(r1)}],
+      [{homeSeed:3,awaySeed:null,label:'#3 vs W(#4/#5)',  ...ms(sf1)},
+       {homeSeed:1,awaySeed:null,label:'#1 vs W(#2/#3)',  ...ms(sf2)}],
+      [{homeSeed:1,awaySeed:2,                            ...ms(ch)}]
     ];
   } else if (maxSeed <= 6) {
-    // 6U: 6-team
+    var r1a=findSlot(3,6), r1b=findSlot(4,5);
+    var sf1=findSlotRound(1,1,0), sf2=findSlotRound(1,2,1);
+    var ch=findSlot(1,2);
     visualRounds = [
-      [{homeSeed:3,awaySeed:6},{homeSeed:4,awaySeed:5}],
-      [{homeSeed:1,awaySeed:null},{homeSeed:2,awaySeed:null}],
-      [{homeSeed:1,awaySeed:2}]
+      [{homeSeed:3,awaySeed:6,                              ...ms(r1a)},
+       {homeSeed:4,awaySeed:5,                              ...ms(r1b)}],
+      [{homeSeed:1,awaySeed:null,label:'#1 vs W(#4/#5)',   ...ms(sf1)},
+       {homeSeed:2,awaySeed:null,label:'#2 vs W(#3/#6)',   ...ms(sf2)}],
+      [{homeSeed:1,awaySeed:2,                              ...ms(ch)}]
     ];
   } else {
-    // 8U: 7-team
+    var r45=findSlot(4,5), r27=findSlot(2,7), r36=findSlot(3,6);
+    var sf1=findSlotRound(1,1,0), sf2=findSlotRound(1,2,1);
+    var ch=findSlot(1,2);
     visualRounds = [
-      [{homeSeed:1,awaySeed:null},{homeSeed:4,awaySeed:5},{homeSeed:2,awaySeed:7},{homeSeed:3,awaySeed:6}],
-      [{homeSeed:1,awaySeed:null},{homeSeed:2,awaySeed:3}],
-      [{homeSeed:1,awaySeed:2}]
+      [{homeSeed:1,awaySeed:null,label:'#1 seed — bye',          date:'',time:'',field:'',parkId:''},
+       {homeSeed:4,awaySeed:5,                                    ...ms(r45)},
+       {homeSeed:2,awaySeed:7,                                    ...ms(r27)},
+       {homeSeed:3,awaySeed:6,                                    ...ms(r36)}],
+      [{homeSeed:1,awaySeed:null,label:'#1 vs W(#4/#5)',         ...ms(sf1)},
+       {homeSeed:2,awaySeed:null,label:'W(#2/#7) vs W(#3/#6)',   ...ms(sf2)}],
+      [{homeSeed:1,awaySeed:2,                                    ...ms(ch)}]
     ];
   }
-
-  // Attach slot data (times/dates/fields) to each visual matchup
-  return visualRounds.map(function(round) {
-    return round.map(function(m) {
-      var s = findSlot(m.homeSeed, m.awaySeed);
-      return {
-        homeSeed: m.homeSeed,
-        awaySeed: m.awaySeed,
-        date: s.date || '',
-        time: s.time || '',
-        field: s.field || '',
-        parkId: s.parkId || ''
-      };
-    });
-  });
+  return visualRounds;
 }
+
 
 function feederLabel(rounds, ri, mi, side) {
   if (ri === 0) return null;
@@ -348,6 +358,183 @@ function renderBracket(divId) {
   var finalized = seeding && seeding.finalized;
   var slotRounds = buildSlotRounds(divId);
   var atm = getAllTeamsMap();
+
+  if (!slotRounds.length) {
+    return '<div class="empty"><div class="icon">&#127942;</div><p>Bracket coming soon</p></div>';
+  }
+
+  function teamName(seed) {
+    if (!finalized || !seeding || !seeding.teams) return null;
+    for (var i=0; i<seeding.teams.length; i++) {
+      if (seeding.teams[i].seed === seed) return seeding.teams[i].name;
+    }
+    return null;
+  }
+
+  function gameWinner(seed1, seed2) {
+    if (!finalized) return null;
+    var t1 = teamName(seed1), t2 = teamName(seed2);
+    if (!t1 || !t2) return null;
+    for (var i=0; i<STATE.schedule.length; i++) {
+      var g = STATE.schedule[i];
+      if (!g.complete) continue;
+      var ht = atm[g.homeId], at2 = atm[g.awayId];
+      if (!ht || !at2) continue;
+      if ((ht.name===t1&&at2.name===t2)||(ht.name===t2&&at2.name===t1)) {
+        var hs = parseInt(g.homeScore), as = parseInt(g.awayScore);
+        if (hs > as) return ht.name;
+        if (as > hs) return at2.name;
+      }
+    }
+    return null;
+  }
+
+  // ── Geometry ──────────────────────────────────────────────────
+  var LW  = 140;  // horizontal line width
+  var GAP = 30;   // gap between two seeds in same matchup
+  var VSP = 90;   // vertical spacing between matchups in round 0
+  var CW  = LW + 50; // column width
+  var PX  = 24;
+  var PY  = 40;
+
+  var r0 = slotRounds[0];
+  var r0Centers = [];
+  for (var i=0; i<r0.length; i++) {
+    r0Centers.push(PY + i * (GAP + VSP) + GAP/2);
+  }
+
+  function buildCenters(prevCenters, thisRound) {
+    var c = [];
+    for (var i=0; i<thisRound.length; i++) {
+      var a = prevCenters[i*2], b = prevCenters[i*2+1];
+      if (a !== undefined && b !== undefined) c.push((a+b)/2);
+      else if (a !== undefined) c.push(a);
+      else c.push(PY + i*(GAP+VSP)*2 + GAP/2);
+    }
+    return c;
+  }
+
+  var allCenters = [r0Centers];
+  for (var ri=1; ri<slotRounds.length; ri++) {
+    allCenters.push(buildCenters(allCenters[ri-1], slotRounds[ri]));
+  }
+
+  var svgW = PX*2 + slotRounds.length * CW + 100;
+  var maxY = 0;
+  for (var i=0; i<r0Centers.length; i++) {
+    var y = r0Centers[i] + GAP/2 + 20;
+    if (y > maxY) maxY = y;
+  }
+  var svgH = Math.max(maxY + PY, 160);
+
+  var CL = '#1a2f4e';   // line color
+  var CS = '#8fa3bc';   // seed/meta color
+  var CW_COLOR = '#2d9e6b'; // winner color
+
+  var lines = '', texts = '';
+
+  for (var ri=0; ri<slotRounds.length; ri++) {
+    var round = slotRounds[ri];
+    var centers = allCenters[ri];
+    var x0 = PX + ri * CW;
+    var isLast = ri === slotRounds.length-1;
+    var lbl = isLast ? 'CHAMPIONSHIP' : ri===slotRounds.length-2 ? 'SEMIFINALS' : 'ROUND 1';
+
+    // Column label
+    texts += '<text x="'+(x0+LW/2)+'" y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#3a7ab5" font-family="Barlow Condensed,sans-serif" letter-spacing="0.06em">'+lbl+'</text>';
+
+    for (var mi=0; mi<round.length; mi++) {
+      var slot = round[mi];
+      var cy = centers[mi] !== undefined ? centers[mi] : PY + mi*(GAP+VSP) + GAP/2;
+      var isBye = !slot.awaySeed;
+      var y1 = cy - GAP/2;
+      var y2 = cy + GAP/2;
+
+      var topRaw = teamName(slot.homeSeed) || ('#'+slot.homeSeed);
+      var botRaw = isBye ? null : (teamName(slot.awaySeed) || ('#'+slot.awaySeed));
+
+      // Check if this game has a winner
+      var winner = (!isBye && finalized) ? gameWinner(slot.homeSeed, slot.awaySeed||0) : null;
+      var topIsWinner = winner && winner === topRaw;
+      var botIsWinner = winner && winner === botRaw;
+
+      // Top line
+      lines += '<line x1="'+x0+'" y1="'+y1+'" x2="'+(x0+LW)+'" y2="'+y1+'" stroke="'+CL+'" stroke-width="1.5"/>';
+      texts += '<text x="'+(x0+4)+'" y="'+(y1-3)+'" font-size="11" fill="'+(topIsWinner?CW_COLOR:CL)+'" font-family="Barlow,sans-serif" font-weight="'+(topIsWinner?700:500)+'">'+esc(topRaw)+'</text>';
+
+      if (isBye) {
+        texts += '<text x="'+(x0+LW+4)+'" y="'+(y1+4)+'" font-size="9" fill="'+CS+'" font-family="Barlow,sans-serif" font-style="italic">— bye</text>';
+        // Horizontal to next col
+        if (!isLast) lines += '<line x1="'+(x0+LW)+'" y1="'+y1+'" x2="'+(x0+CW)+'" y2="'+y1+'" stroke="'+CL+'" stroke-width="1.5"/>';
+      } else {
+        // Bottom line
+        lines += '<line x1="'+x0+'" y1="'+y2+'" x2="'+(x0+LW)+'" y2="'+y2+'" stroke="'+CL+'" stroke-width="1.5"/>';
+        texts += '<text x="'+(x0+4)+'" y="'+(y2-3)+'" font-size="11" fill="'+(botIsWinner?CW_COLOR:CL)+'" font-family="Barlow,sans-serif" font-weight="'+(botIsWinner?700:500)+'">'+esc(botRaw||'TBD')+'</text>';
+        // Vertical connector right side
+        lines += '<line x1="'+(x0+LW)+'" y1="'+y1+'" x2="'+(x0+LW)+'" y2="'+y2+'" stroke="'+CL+'" stroke-width="1.5"/>';
+        // Horizontal to midpoint toward next col
+        if (!isLast) lines += '<line x1="'+(x0+LW)+'" y1="'+cy+'" x2="'+(x0+CW)+'" y2="'+cy+'" stroke="'+CL+'" stroke-width="1.5"/>';
+      }
+
+      // Game meta below matchup
+      var metaParts = [];
+      if (slot.date) metaParts.push(fmtDate(slot.date));
+      if (slot.time) metaParts.push(fmtTime(slot.time));
+      if (slot.field) metaParts.push(slot.field.replace('Field ','F'));
+      if (metaParts.length) {
+        texts += '<text x="'+(x0+LW/2)+'" y="'+(y2+12)+'" text-anchor="middle" font-size="8" fill="'+CS+'" font-family="Barlow,sans-serif">'+esc(metaParts.join(' · '))+'</text>';
+      }
+    }
+
+    // Vertical connectors to next round
+    if (ri < slotRounds.length-1) {
+      var nextCenters = allCenters[ri+1];
+      var nextX = x0 + CW;
+      for (var ni=0; ni<slotRounds[ri+1].length; ni++) {
+        var ya = centers[ni*2];
+        var yb = centers[ni*2+1];
+        var yd = nextCenters[ni];
+        if (ya !== undefined && yb !== undefined && yd !== undefined) {
+          lines += '<line x1="'+nextX+'" y1="'+ya+'" x2="'+nextX+'" y2="'+yb+'" stroke="'+CL+'" stroke-width="1.5"/>';
+        } else if (ya !== undefined && yd !== undefined) {
+          // Single source — straight across
+        }
+      }
+    }
+  }
+
+  // Winner line
+  var lastCenters = allCenters[allCenters.length-1];
+  var champY = lastCenters[0] !== undefined ? lastCenters[0] - GAP/2 : svgH/2;
+  var champX = PX + slotRounds.length * CW;
+  lines += '<line x1="'+champX+'" y1="'+champY+'" x2="'+(champX+55)+'" y2="'+champY+'" stroke="'+CL+'" stroke-width="1.5"/>';
+  texts += '<text x="'+(champX+60)+'" y="'+(champY+4)+'" font-size="12" font-weight="700" fill="'+CL+'" font-family="Barlow Condensed,sans-serif" letter-spacing="0.04em">WINNER</text>';
+
+  if (!finalized) {
+    texts += '<text x="'+(svgW/2)+'" y="'+(svgH+15)+'" text-anchor="middle" font-size="9" fill="'+CS+'" font-family="Barlow,sans-serif" font-style="italic">Team names appear after seeding is finalized</text>';
+  }
+
+  var svg = '<svg width="'+svgW+'" height="'+(svgH+25)+'" viewBox="0 0 '+svgW+' '+(svgH+25)+'" style="display:block;max-width:100%;overflow:visible">'+lines+texts+'</svg>';
+
+  return '<div style="overflow-x:auto;padding:0.5rem 0">'+svg+'</div>';
+}
+
+
+function getMatchupWinner(m, atm) {
+  if (!m) return null;
+  if (m.bye && m.t1) return m.t1.name;
+  if (!m.game || !m.game.complete) return null;
+  var h = parseInt(m.game.homeScore), a = parseInt(m.game.awayScore);
+  if (h > a) return atm[m.game.homeId] ? atm[m.game.homeId].name : null;
+  if (a > h) return atm[m.game.awayId] ? atm[m.game.awayId].name : null;
+  return null;
+}
+
+function renderBracket(divId) {
+  var seeding = STATE.seedings[divId];
+  var finalized = seeding && seeding.finalized;
+  var slotRounds = buildSlotRounds(divId);
+  var atm = getAllTeamsMap();
   var ITEM_H = 88;
 
   if (!slotRounds.length) return '<div class="empty"><div class="icon">&#127942;</div><p>Bracket coming soon</p></div>';
@@ -362,8 +549,17 @@ function renderBracket(divId) {
       html += '<div class="b-col"><div class="b-col-lbl">'+lbl+'</div><div class="b-col-games">';
       for (var mi=0; mi<round.length; mi++) {
         var slot = round[mi];
-        var topLbl = ri===0 ? '#'+slot.homeSeed+' Seed' : (feederLabel(slotRounds,ri,mi,0)||'#'+slot.homeSeed+' Seed');
-        var botLbl = ri===0 ? '#'+slot.awaySeed+' Seed' : (feederLabel(slotRounds,ri,mi,1)||'#'+slot.awaySeed+' Seed');
+        var isBye = !slot.awaySeed;
+        var topLbl = slot.label || ('#'+slot.homeSeed+' Seed');
+        var botLbl = isBye ? null : ('#'+slot.awaySeed+' Seed');
+
+        if (isBye && ri===0) {
+          // Show bye as dashed greyed slot
+          html += '<div style="margin-bottom:8px;border:1.5px dashed #dde5ef;border-radius:8px;padding:8px 10px;background:#eef2f7;min-height:52px;display:flex;align-items:center">'
+                + '<span style="font-size:11px;color:#8fa3bc;font-style:italic">'+esc(topLbl)+'</span></div>';
+          continue;
+        }
+
         var parts = [];
         if (slot.date) parts.push(fmtDate(slot.date));
         if (slot.time) parts.push(fmtTime(slot.time));
@@ -372,7 +568,7 @@ function renderBracket(divId) {
         var infoSpans = '';
         for (var pi=0; pi<parts.length; pi++) infoSpans += '<span>'+esc(parts[pi])+'</span>';
         var info = (isLast?'&#127942; ':'')+infoSpans;
-        html += bracketMatchHTML(topLbl, botLbl, info, isLast, false, false, false);
+        html += bracketMatchHTML(topLbl, botLbl||'TBD', info, isLast, false, false, false);
       }
       html += '</div></div>';
       if (ri < slotRounds.length-1) {
