@@ -254,13 +254,18 @@ function bracketMatchHTML(top, bottom, info, isChamp, topWon, bottomWon, bottomT
     infoHTML + '</div>';
 }
 
-function connectorSVG(count, itemH) {
-  var h = count * itemH;
+function connectorSVG(currentRoundCount, nextRoundCount, itemH) {
+  // currentRoundCount = matchups in current round
+  // nextRoundCount = matchups in next round (each feeds from 2 current matchups)
+  var h = currentRoundCount * itemH;
   var paths = '';
-  for (var i=0; i<count; i+=2) {
-    var y1 = i*itemH + itemH/2;
-    var y2 = (i+1)*itemH + itemH/2;
-    var ym = Math.floor(i/2)*itemH*2 + itemH;
+  for (var i=0; i<nextRoundCount; i++) {
+    var srcIdx1 = i * 2;
+    var srcIdx2 = i * 2 + 1;
+    if (srcIdx2 >= currentRoundCount) break;
+    var y1 = srcIdx1 * itemH + itemH / 2;
+    var y2 = srcIdx2 * itemH + itemH / 2;
+    var ym = (y1 + y2) / 2;
     paths += '<line x1="0" y1="'+y1+'" x2="16" y2="'+y1+'" stroke="#ccd6e0" stroke-width="1.5"/>' +
       '<line x1="0" y1="'+y2+'" x2="16" y2="'+y2+'" stroke="#ccd6e0" stroke-width="1.5"/>' +
       '<line x1="16" y1="'+y1+'" x2="16" y2="'+y2+'" stroke="#ccd6e0" stroke-width="1.5"/>' +
@@ -312,7 +317,7 @@ function renderBracket(divId) {
       }
       html += '</div></div>';
       if (ri < slotRounds.length-1) {
-        html += '<div class="connector" style="height:'+round.length*ITEM_H+'px">'+connectorSVG(round.length,ITEM_H)+'</div>';
+        var nextRound = slotRounds[ri+1]; html += '<div class="connector" style="height:'+round.length*ITEM_H+'px">'+connectorSVG(round.length, nextRound?nextRound.length:Math.floor(round.length/2), ITEM_H)+'</div>';
       }
     }
     html += '</div></div>';
@@ -435,7 +440,7 @@ function renderBracket(divId) {
       html += bracketMatchHTML(t1lbl, t2lbl, minfo, isLastR, hw?mm.game.homeScore:false, (!mm.bye&&aw)?mm.game.awayScore:false, mm.bye);
     }
     html += '</div></div>';
-    if (rri<rounds.length-1) html += '<div class="connector" style="height:'+rround.length*ITEM_H+'px">'+connectorSVG(rround.length,ITEM_H)+'</div>';
+    if (rri<rounds.length-1) { var nxt = rounds[rri+1]; html += '<div class="connector" style="height:'+rround.length*ITEM_H+'px">'+connectorSVG(rround.length, nxt?nxt.length:Math.floor(rround.length/2), ITEM_H)+'</div>'; }
   }
   html += '</div></div>';
   return html;
